@@ -1,0 +1,34 @@
+From fd85f8c94182558ff1480d06a236d6fb927979a3 Mon Sep 17 00:00:00 2001
+From: "Frank B. Brokken" <f.b.brokken@rug.nl>
+Date: Thu, 4 Feb 2016 22:37:17 +0100
+Subject: [PATCH] fixed invalid memory reads detected by the address sanitizer
+
+---
+ yodl/src/queue/queuepush.c | 5 ++++-
+ 3 files changed, 15 insertions(+), 3 deletions(-)
+
+diff --git a/yodl/src/queue/queuepush.c b/yodl/src/queue/queuepush.c
+index 378dc44..03cff1d 100644
+--- a/yodl/src/queue/queuepush.c
++++ b/yodl/src/queue/queuepush.c
+@@ -29,8 +29,11 @@ void queue_push(register Queue *qp, size_t extra_length, char const *info)
+ 
+     if (extra_length > available_length)
+     {
++        size_t original_length = memory_length;
++
+                                                    /* enlarge the buffer:  */
+         memory_length += extra_length - available_length + BLOCK_QUEUE;
++
+         cp = new_memory(memory_length, sizeof(char));
+ 
+         if (message_show(MSG_INFO))
+@@ -48,7 +51,7 @@ void queue_push(register Queue *qp, size_t extra_length, char const *info)
+         }
+         else                                        /* q as one block       */
+         {
+-            memcpy(cp, qp->d_memory, memory_length);/* cp existing buffer   */
++            memcpy(cp, qp->d_memory, original_length);/* cp existing buffer   */
+             qp->d_read = cp + (qp->d_read - qp->d_memory);
+             qp->d_write = cp + (qp->d_write - qp->d_memory);
+         }

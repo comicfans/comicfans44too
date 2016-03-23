@@ -1,0 +1,31 @@
+From 9e2fb2bf1f931f2401539e44e10248b655e0b675 Mon Sep 17 00:00:00 2001
+From: Comic Fans <comicfans44@gmail.com>
+Date: Sun, 20 Mar 2016 09:16:07 +0000
+Subject: [PATCH] qmake: fix heap-use-after-free bug
+
+ProString::toQString(QString&) use setRawData which leaks its
+internal m_string's memory to return variable without increase QString
+ref, thistriggers heap-use-after-free bug when accessing QString after
+ProString destroied (reported by ASAN). use setUnicode instead.
+
+Change-Id: I18c197a81e04b0bffa87728055ac3c79addef808
+---
+ qmake/library/proitems.cpp | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/qmake/library/proitems.cpp b/qmake/library/proitems.cpp
+index 5fb70df..c8aaf7d 100644
+--- a/qmake/library/proitems.cpp
++++ b/qmake/library/proitems.cpp
+@@ -156,7 +156,7 @@ QString ProString::toQString() const
+ 
+ QString &ProString::toQString(QString &tmp) const
+ {
+-    return tmp.setRawData(m_string.constData() + m_offset, m_length);
++    return tmp.setUnicode(m_string.constData() + m_offset, m_length);
+ }
+ 
+ /*!
+-- 
+2.7.3
+
